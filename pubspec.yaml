@@ -32,6 +32,9 @@ dependencies:
     sdk: flutter
   get: ^4.6.5
   syncfusion_flutter_charts: ^20.2.38
+  intl: ^0.17.0
+  syncfusion_flutter_calendar: ^20.2.38
+
 
 
 
