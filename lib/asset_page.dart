@@ -162,6 +162,39 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
   Widget _buildCalendarTab(BuildContext context) {
     return Column(
       children: [
+        Container(
+          padding: EdgeInsets.all(20),
+          color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '9월',  // 달력에 맞게 월을 동적으로 표시할 수도 있음
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              Row(
+                children: [
+                  Text('지출: ',
+                      style: TextStyle(fontSize: 14, color: Colors.grey)),
+                  Text('1,230,500원',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              Row(
+                children: [
+                  Text('수입: ',
+                      style: TextStyle(fontSize: 14, color: Colors.grey)),
+                  Text('2,310,200원',
+                      style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -189,7 +222,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
             ),
           ],
         ),
-        SizedBox(height: 10),
+        SizedBox(height: 35),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
