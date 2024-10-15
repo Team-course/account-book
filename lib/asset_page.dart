@@ -54,9 +54,8 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildContentTab(
-                      context, '9월', '1,230,500원', '2,310,200원', true),
-                  _buildCalendarTab(context), // 수정된 달력 탭
+                  _buildContentTab(context),
+                  _buildCalendarTab(context),
                   _buildFixedExpenseTab(context),
                 ],
               ),
@@ -81,79 +80,71 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
     );
   }
 
-  // 내역 탭
-  Widget _buildContentTab(BuildContext context, String month, String expense,
-      String income, bool showTransactions) {
-    return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.all(20),
-          color: Colors.white,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  // 중복되는 상단 정보를 공통으로 출력하는 함수
+  Widget _buildHeader(String month, String expense, String income) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            month,
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 10),
+          Row(
             children: [
-              Text(
-                month,
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  Text('지출: ',
-                      style: TextStyle(fontSize: 14, color: Colors.grey)),
-                  Text(expense,
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ],
-              ),
-              Row(
-                children: [
-                  Text('수입: ',
-                      style: TextStyle(fontSize: 14, color: Colors.grey)),
-                  Text(income,
-                      style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold)),
-                ],
-              ),
+              Text('지출: ', style: TextStyle(fontSize: 14, color: Colors.grey)),
+              Text(expense, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ],
           ),
-        ),
-        if (showTransactions)
-          Expanded(
-            child: ListView.builder(
-              itemCount: transactions.length,
-              itemBuilder: (context, index) {
-                final currentTransaction = transactions[index];
-                final previousTransaction =
-                index > 0 ? transactions[index - 1] : null;
-
-                final showDate = previousTransaction == null ||
-                    currentTransaction['date'] != previousTransaction['date'];
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (showDate)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 8.0),
-                        child: Text(
-                          currentTransaction['date']!,
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                    _buildTransactionItem(
-                      context,
-                      currentTransaction['title']!,
-                      currentTransaction['amount']!,
-                    ),
-                  ],
-                );
-              },
-            ),
+          Row(
+            children: [
+              Text('수입: ', style: TextStyle(fontSize: 14, color: Colors.grey)),
+              Text(income, style: TextStyle(fontSize: 18, color: Colors.blue, fontWeight: FontWeight.bold)),
+            ],
           ),
+        ],
+      ),
+    );
+  }
+
+  // 내역 탭
+  Widget _buildContentTab(BuildContext context) {
+    return Column(
+      children: [
+        _buildHeader('9월', '1,230,500원', '2,310,200원'),
+        Expanded(
+          child: ListView.builder(
+            itemCount: transactions.length,
+            itemBuilder: (context, index) {
+              final currentTransaction = transactions[index];
+              final previousTransaction = index > 0 ? transactions[index - 1] : null;
+
+              final showDate = previousTransaction == null || currentTransaction['date'] != previousTransaction['date'];
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (showDate)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: Text(
+                        currentTransaction['date']!,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  _buildTransactionItem(
+                    context,
+                    currentTransaction['title']!,
+                    currentTransaction['amount']!,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
       ],
     );
   }
@@ -162,39 +153,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
   Widget _buildCalendarTab(BuildContext context) {
     return Column(
       children: [
-        Container(
-          padding: EdgeInsets.all(20),
-          color: Colors.white,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '9월',  // 달력에 맞게 월을 동적으로 표시할 수도 있음
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  Text('지출: ',
-                      style: TextStyle(fontSize: 14, color: Colors.grey)),
-                  Text('1,230,500원',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ],
-              ),
-              Row(
-                children: [
-                  Text('수입: ',
-                      style: TextStyle(fontSize: 14, color: Colors.grey)),
-                  Text('2,310,200원',
-                      style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ],
-          ),
-        ),
+        _buildHeader('9월', '1,230,500원', '2,310,200원'),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -240,7 +199,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
           ],
         ),
         SizedBox(height: 10),
-        Expanded( // 이 부분이 달력의 6주를 화면에 맞게 조정해줍니다
+        Expanded(
           child: Column(
             children: [
               for (var i = 0; i < 6; i++) Expanded(child: calendarDay(i)), // 6주를 적절히 화면에 맞춤
@@ -251,120 +210,11 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
     );
   }
 
-  // 주별로 일자를 출력하는 위젯
-  Widget calendarDay(int num) {
-    int iz = num * 7;
-    int yz = (num + 1) * 7;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        for (var i = iz; i < yz; i++)
-          if (i < controller.days.length) // 인덱스가 days 리스트의 길이를 초과하지 않도록 체크
-            Obx(() {
-              final dayData = controller.days[i];
-              final isInMonth = dayData["inMonth"];
-              final income = dayData["income"];
-              final expense = dayData["expense"];
-
-              return Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isInMonth ? Colors.white : Colors.white, // 월에 속하지 않는 칸의 색상 지정
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        dayData["day"].toString(), // 일자 출력
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: isInMonth ? Colors.black : Colors.grey, // 월에 속하지 않는 일자는 회색 처리
-                        ),
-                      ),
-                      if (isInMonth) ...[
-                        SizedBox(height: 5),
-                        if(income !=0)
-                          Text(
-                            '+ ${dayData["income"]}원',
-                            style: TextStyle(fontSize: 8, color: Colors.green), // 수입 표시
-                          )
-                        else
-                          Text(
-                            '    ',
-                            style: TextStyle(fontSize: 8, color: Colors.white), // 수입 표시
-                          ),
-                        if (expense != 0)
-                          Text(
-                            '- ${dayData["expense"]}원',
-                            style: TextStyle(fontSize: 8, color: Colors.red), // 지출 표시
-                          )
-                        else
-                          Text(
-                            '    ',
-                            style: TextStyle(fontSize: 8, color: Colors.white), // 수입 표시
-                          ),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            })
-          else
-            Expanded(
-              child: Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Text(''), // 빈칸을 채우기
-              ),
-            ),
-      ],
-    );
-  }
-
   // 고정 탭 (도넛 차트와 확장 가능한 리스트)
   Widget _buildFixedExpenseTab(BuildContext context) {
     return Column(
       children: [
-        Container(
-          padding: EdgeInsets.all(20),
-          color: Colors.white,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '9월',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  Text('지출: ',
-                      style: TextStyle(fontSize: 14, color: Colors.grey)),
-                  Text('1,230,500원',
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ],
-              ),
-              Row(
-                children: [
-                  Text('수입: ',
-                      style: TextStyle(fontSize: 14, color: Colors.grey)),
-                  Text('2,310,200원',
-                      style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ],
-          ),
-        ),
+        _buildHeader('9월', '1,230,500원', '2,310,200원'),
         Expanded(
           child: Column(
             children: [
@@ -427,7 +277,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
     );
   }
 
-// 확장 가능한 지출 항목
+  // 확장 가능한 지출 항목
   Widget _buildExpandableExpenseItem(
       String title, String amount, List<Widget> subItems, Color circleColor) {
     return ExpansionTile(
@@ -441,7 +291,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
     );
   }
 
-// 서브 지출 항목 위젯
+  // 서브 지출 항목 위젯
   Widget _buildSubExpenseItem(String subTitle, String subAmount) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -451,7 +301,6 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
       ),
     );
   }
-
 
   // 내역 항목
   Widget _buildTransactionItem(
@@ -477,6 +326,82 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
           ),
         ),
       ),
+    );
+  }
+
+  // 주별로 일자를 출력하는 위젯
+  Widget calendarDay(int num) {
+    int iz = num * 7;
+    int yz = (num + 1) * 7;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        for (var i = iz; i < yz; i++)
+          if (i < controller.days.length) // 인덱스가 days 리스트의 길이를 초과하지 않도록 체크
+            Obx(() {
+              final dayData = controller.days[i];
+              final isInMonth = dayData["inMonth"];
+              final income = dayData["income"];
+              final expense = dayData["expense"];
+
+              return Expanded(
+                child: Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isInMonth ? Colors.white : Colors.white, // 월에 속하지 않는 칸의 색상 지정
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        dayData["day"].toString(), // 일자 출력
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isInMonth ? Colors.black : Colors.grey, // 월에 속하지 않는 일자는 회색 처리
+                        ),
+                      ),
+                      if (isInMonth) ...[
+                        SizedBox(height: 5),
+                        if (income != 0)
+                          Text(
+                            '+ ${dayData["income"]}원',
+                            style: TextStyle(fontSize: 8, color: Colors.green), // 수입 표시
+                          )
+                        else
+                          Text(
+                            '    ',
+                            style: TextStyle(fontSize: 8, color: Colors.white), // 수입 표시
+                          ),
+                        if (expense != 0)
+                          Text(
+                            '- ${dayData["expense"]}원',
+                            style: TextStyle(fontSize: 8, color: Colors.red), // 지출 표시
+                          )
+                        else
+                          Text(
+                            '    ',
+                            style: TextStyle(fontSize: 8, color: Colors.white), // 수입 표시
+                          ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            })
+          else
+            Expanded(
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Text(''), // 빈칸을 채우기
+              ),
+            ),
+      ],
     );
   }
 }
@@ -521,7 +446,7 @@ class CalendarController extends GetxController {
   void _generateDays(int month) {
     days.clear();
     DateTime firstDayOfMonth = DateTime(DateTime.now().year, month, 1);
-    int lastDay = DateTime(DateTime.now().year, month + 1, 0).day;
+    int lastDay = DateTime(DateTime.now().year, month == 12 ? 12 : month + 1, 0).day;
     int startingWeekday = firstDayOfMonth.weekday % 7; // 첫 날이 무슨 요일인지 계산 (일요일 = 0)
 
     // 첫 번째 주 앞쪽에 빈칸 추가
