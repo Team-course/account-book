@@ -352,8 +352,22 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
               Expanded(
                 child: ListView(
                   children: [
-                    _buildFixedExpenseItem('보험', '192,000원', Colors.blue),
-                    _buildFixedExpenseItem('적금', '50,000원', Colors.lightBlue),
+                    _buildExpandableExpenseItem(
+                        '보험',
+                        '192,000원',
+                        [
+                          _buildSubExpenseItem('생명보험', '120,000원'),
+                          _buildSubExpenseItem('건강보험', '72,000원'),
+                        ],
+                        Colors.blue),
+                    _buildExpandableExpenseItem(
+                        '적금',
+                        '50,000원',
+                        [
+                          _buildSubExpenseItem('정기적금', '30,000원'),
+                          _buildSubExpenseItem('자유적립식', '20,000원'),
+                        ],
+                        Colors.lightBlue),
                     _buildExpandableExpenseItem(
                         '통신비',
                         '92,000원',
@@ -362,7 +376,14 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
                           _buildSubExpenseItem('휴대폰', '72,000원'),
                         ],
                         Colors.lightBlueAccent),
-                    _buildFixedExpenseItem('교통비', '55,000원', Colors.cyan),
+                    _buildExpandableExpenseItem(
+                        '교통비',
+                        '55,000원',
+                        [
+                          _buildSubExpenseItem('지하철', '30,000원'),
+                          _buildSubExpenseItem('버스', '25,000원'),
+                        ],
+                        Colors.cyan),
                   ],
                 ),
               ),
@@ -373,20 +394,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
     );
   }
 
-  // 고정 지출 항목 위젯
-  Widget _buildFixedExpenseItem(
-      String title, String amount, Color circleColor) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: circleColor,
-        radius: 10,
-      ),
-      title: Text(title),
-      trailing: Text(amount),
-    );
-  }
-
-  // 확장 가능한 지출 항목
+// 확장 가능한 지출 항목
   Widget _buildExpandableExpenseItem(
       String title, String amount, List<Widget> subItems, Color circleColor) {
     return ExpansionTile(
@@ -400,7 +408,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
     );
   }
 
-  // 서브 지출 항목 위젯
+// 서브 지출 항목 위젯
   Widget _buildSubExpenseItem(String subTitle, String subAmount) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -410,6 +418,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
       ),
     );
   }
+
 
   // 내역 항목
   Widget _buildTransactionItem(
