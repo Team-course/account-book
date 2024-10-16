@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:syncfusion_flutter_charts/charts.dart'; // For the donut chart
-
+import 'package:syncfusion_flutter_charts/charts.dart';
 class AssetPage extends StatefulWidget {
   const AssetPage({super.key});
 
@@ -11,11 +10,9 @@ class AssetPage extends StatefulWidget {
 
 class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
   late TabController _tabController;
-  //final CalendarController controller = Get.put(CalendarController());
   final CalendarController contentTabController = CalendarController();
   final CalendarController calendarTabController = CalendarController();
   final CalendarController fixedTabController = CalendarController();
-// controller 초기화
 
   // Transactions list for "내역" tab
   final List<Map<String, String>> transactions = [
@@ -172,7 +169,6 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
   }
 
   // 달력 탭
-  // 달력 탭
   Widget _buildCalendarTab(BuildContext context) {
     return Column(
       children: [
@@ -180,28 +176,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            IconButton(
-              onPressed: () {
-                calendarTabController.previousMonth(); // 이전 달로 이동
-              },
-              icon: Icon(Icons.arrow_back_ios, size: 15, color: Colors.black),
-            ),
-            Flexible(
-              child: Center(
-                child: Obx(
-                      () => Text(
-                    '${calendarTabController.month}월', // 동적으로 현재 달 표시
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: () {
-                calendarTabController.nextMonth(); // 다음 달로 이동
-              },
-              icon: Icon(Icons.arrow_forward_ios, size: 15, color: Colors.black),
-            ),
+
           ],
         ),
         SizedBox(height: 35),
@@ -454,7 +429,10 @@ class CalendarController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _generateDays(month.value);
+    _generateDays(month.value);  // 초기 데이터를 로드
+    Future.delayed(Duration.zero, () {
+      update();  // 즉시 갱신을 트리거
+    });
   }
 
   // 이전 달로 이동하는 함수
@@ -471,6 +449,7 @@ class CalendarController extends GetxController {
 
   // 날짜 데이터를 생성하는 함수
   void _generateDays(int month) {
+    print('Generating days for month: $month'); // 디버깅용 출력
     days.clear();
     DateTime firstDayOfMonth = DateTime(DateTime.now().year, month, 1);
     int lastDay = DateTime(DateTime.now().year, month == 12 ? 12 : month + 1, 0).day;
