@@ -11,7 +11,11 @@ class AssetPage extends StatefulWidget {
 
 class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
   late TabController _tabController;
-  final CalendarController controller = Get.put(CalendarController()); // controller 초기화
+  //final CalendarController controller = Get.put(CalendarController());
+  final CalendarController contentTabController = CalendarController();
+  final CalendarController calendarTabController = CalendarController();
+  final CalendarController fixedTabController = CalendarController();
+// controller 초기화
 
   // Transactions list for "내역" tab
   final List<Map<String, String>> transactions = [
@@ -81,18 +85,35 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
   }
 
   // 중복되는 상단 정보를 공통으로 출력하는 함수
-  Widget _buildHeader(String month, String expense, String income) {
+  Widget _buildHeader(CalendarController controller, String expense, String income) {
     return Container(
       padding: EdgeInsets.all(20),
       color: Colors.white,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            month,
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  controller.previousMonth();
+                  setState(() {});
+                },
+                icon: Icon(Icons.arrow_back_ios, size: 10, color: Colors.black),
+              ),
+              Text(
+                '${controller.month}월',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                onPressed: () {
+                  controller.nextMonth();
+                  setState(() {});
+                },
+                icon: Icon(Icons.arrow_forward_ios, size: 10, color: Colors.black),
+              ),
+            ],
           ),
-          SizedBox(height: 10),
           Row(
             children: [
               Text('지출: ', style: TextStyle(fontSize: 14, color: Colors.grey)),
@@ -110,11 +131,12 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
     );
   }
 
+
   // 내역 탭
   Widget _buildContentTab(BuildContext context) {
     return Column(
       children: [
-        _buildHeader('9월', '1,230,500원', '2,310,200원'),
+        _buildHeader(contentTabController, '1,230,500원', '2,310,200원'),
         Expanded(
           child: ListView.builder(
             itemCount: transactions.length,
@@ -150,16 +172,17 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
   }
 
   // 달력 탭
+  // 달력 탭
   Widget _buildCalendarTab(BuildContext context) {
     return Column(
       children: [
-        _buildHeader('9월', '1,230,500원', '2,310,200원'),
+        _buildHeader(calendarTabController, '1,230,500원', '2,310,200원'),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             IconButton(
               onPressed: () {
-                controller.previousMonth(); // 이전 달로 이동
+                calendarTabController.previousMonth(); // 이전 달로 이동
               },
               icon: Icon(Icons.arrow_back_ios, size: 15, color: Colors.black),
             ),
@@ -167,7 +190,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
               child: Center(
                 child: Obx(
                       () => Text(
-                    '${controller.month}월', // 동적으로 현재 달 표시
+                    '${calendarTabController.month}월', // 동적으로 현재 달 표시
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -175,7 +198,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
             ),
             IconButton(
               onPressed: () {
-                controller.nextMonth(); // 다음 달로 이동
+                calendarTabController.nextMonth(); // 다음 달로 이동
               },
               icon: Icon(Icons.arrow_forward_ios, size: 15, color: Colors.black),
             ),
@@ -185,12 +208,16 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            for (var i = 0; i < controller.week.length; i++)
+            for (var i = 0; i < calendarTabController.week.length; i++)
               Flexible(
                 child: Text(
-                  controller.week[i],
+                  calendarTabController.week[i],
                   style: TextStyle(
-                    color: i == 0 ? Colors.red : i == controller.week.length - 1 ? Colors.blue : Colors.black,
+                    color: i == 0
+                        ? Colors.red
+                        : i == calendarTabController.week.length - 1
+                        ? Colors.blue
+                        : Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.left,
@@ -200,11 +227,11 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
         ),
         SizedBox(height: 10),
         Expanded(
-          child: Column(
+          child: Obx(() => Column(
             children: [
               for (var i = 0; i < 6; i++) Expanded(child: calendarDay(i)), // 6주를 적절히 화면에 맞춤
             ],
-          ),
+          )),
         ),
       ],
     );
@@ -214,7 +241,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
   Widget _buildFixedExpenseTab(BuildContext context) {
     return Column(
       children: [
-        _buildHeader('9월', '1,230,500원', '2,310,200원'),
+        _buildHeader(fixedTabController, '1,230,500원', '2,310,200원'),
         Expanded(
           child: Column(
             children: [
@@ -338,9 +365,9 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         for (var i = iz; i < yz; i++)
-          if (i < controller.days.length) // 인덱스가 days 리스트의 길이를 초과하지 않도록 체크
+          if (i < calendarTabController.days.length) // 인덱스가 days 리스트의 길이를 초과하지 않도록 체크
             Obx(() {
-              final dayData = controller.days[i];
+              final dayData = calendarTabController.days[i];
               final isInMonth = dayData["inMonth"];
               final income = dayData["income"];
               final expense = dayData["expense"];
