@@ -19,6 +19,7 @@ class NavigationMenu extends StatelessWidget{
               elevation: 0,
               selectedIndex: controller.selectedIndex.value,
               onDestinationSelected: (index) => controller.selectedIndex.value = index,
+              backgroundColor: Colors.white,
               destinations: const [
                 NavigationDestination(icon: Icon(Icons.home), label: "Home"),
                 NavigationDestination(icon: Icon(Icons.account_balance_wallet), label: "Asset"),
@@ -39,9 +40,5 @@ class NavigationController extends GetxController {
     AssetPage(),
     CalendarPage(),
     MyPage()
-    // Container(color: Colors.green),
-    // Container(color: Colors.purple),
-    // Container(color: Colors.orange),
-    // Container(color: Colors.blue)
   ];
 }
