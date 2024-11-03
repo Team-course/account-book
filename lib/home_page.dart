@@ -1,5 +1,10 @@
+import 'package:account_book/MonthlyExpense_page.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'myAccount_page.dart';
+import 'dart:convert';
+import 'package:intl/intl.dart';
+import 'service/ExpenseService.dart';
 
 void main() {
   runApp(MyApp());
@@ -20,15 +25,47 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageApp extends State<HomePage> {
+  final ExpenseService expenseService = ExpenseService();
+
   // 동적 텍스트
   String currentMoney = "- 원";
-  String monthlyExpense = " -원";
-  String todayExpense = " - 원";
+  double monthlyExpense =0.0;
+  double todayExpense = 0.0;
   String financial_schedule= " 교통비 ";
   int containerCount = 3;  // 동적으로 변하는 아이템 수
 
   @override
+  void initState(){
+    super.initState();
+    loadTotalExpense(1);
+    loadTodayExpense(1);
+  }
+
+  Future<void> loadTotalExpense(int userId) async{
+    DateTime now = DateTime.now();
+    String startDate = DateFormat('yyyy-MM-01').format(now); // 현재 월의 첫째 날
+    String endDate = DateFormat('yyyy-MM-dd').format(DateTime(now.year, now.month + 1, 0));
+
+    double expense = await expenseService.fetchTotalExpense(userId,startDate,endDate);
+    setState(() {
+      monthlyExpense = expense;
+    });
+  }
+
+  Future<void> loadTodayExpense(int userId) async{
+    String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    double expense = await expenseService.fetchTotalExpense(userId, today, today);
+    setState(() {
+      todayExpense = expense;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // 금액 포맷팅
+    String formattedMonthlyExpense = NumberFormat('#,##0').format(monthlyExpense);
+    String formattedTodayExpense = NumberFormat('#,##0').format(todayExpense);
+
     return MaterialApp(
       home: Scaffold(
         backgroundColor: Color(0xFFF5F5F5),
@@ -51,7 +88,8 @@ class HomePageApp extends State<HomePage> {
                   children: [
                     Text(
                         "입출금 계좌",
-                        style: TextStyle(fontSize: 17),
+                        style: TextStyle(fontSize: 17,
+                        color: Color(0xFF989898)),
                     ),
                     SizedBox(height: 10),
                     Row(
@@ -67,7 +105,9 @@ class HomePageApp extends State<HomePage> {
                               context,
                               MaterialPageRoute(builder: (context) => SecondPage()),
                             );
-                          },
+                          },style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFBEE8F1), // 버튼 배경색 설정
+                        ),
                           child: Text("송금"),
                         ),
                       ],
@@ -83,12 +123,18 @@ class HomePageApp extends State<HomePage> {
                             children: [
                               Icon(Icons.image, size: 50),  // 그림 아이콘
                               Text("아이템 $index"),  // 동적 텍스트
-                              ElevatedButton(
+                              TextButton(
                                 onPressed: () {
                                   print("Button $index clicked");
                                 },
-                                child: Icon(Icons.arrow_forward),  // 동적 버튼
-                              ),
+                                child: Text(
+                                  ">",
+                                  style: TextStyle(
+                                    fontSize: 18, // 크기 조정
+                                    color: Colors.black, // 색상 설정
+                                  ),
+                                ),
+                              )
                             ],
                           );
                         },
@@ -114,7 +160,8 @@ class HomePageApp extends State<HomePage> {
                   children: [
                     Text(
                         "이번 달 지출",
-                        style: TextStyle(fontSize: 17),
+                        style: TextStyle(fontSize: 17,
+                        color: Color(0xFF989898))
                     ),
                     SizedBox(height: 10),
                     // 두 번째 컨테이너의 동적 아이템 생성 부분
@@ -122,18 +169,22 @@ class HomePageApp extends State<HomePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          monthlyExpense,
+                          '$formattedMonthlyExpense 원',
                           style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
                         ),
-                        ElevatedButton(
+                        TextButton(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => SecondPage()),
+                            Navigator.push(context, MaterialPageRoute(builder: (context)=> MonthlyExpense_page()),
                             );
                           },
-                          child: Icon(Icons.arrow_forward)
-                        ),
+                          child: Text(
+                            ">",
+                            style: TextStyle(
+                              fontSize: 18, // 크기 조정
+                              color: Colors.black, // 색상 설정
+                            ),
+                          ),
+                        )
                       ],
                     ),
                     SizedBox(height: 20),
@@ -146,25 +197,31 @@ class HomePageApp extends State<HomePage> {
                             children: [
                               Row(
                               children: [
-                              Icon(Icons.image, size: 50),
+                                Icon(Icons.receipt, size: 40, color: Colors.green),
                               SizedBox(width:10),
                               Column(
                               crossAxisAlignment: CrossAxisAlignment.start,// 그림 아이콘
                               children: [
                                 Text("오늘의 지출"),
                                 Text(
-                                  todayExpense
+                                  '$formattedTodayExpense 원'
                                   ),
                                 ],
                               ),
                               ],
                               ),
-                              ElevatedButton(
+                              TextButton(
                                 onPressed: () {
                                   print("Button $index clicked");
                                 },
-                                child: Icon(Icons.arrow_forward), // '>' 모양 아이콘
-                              ),
+                                child: Text(
+                                  ">",
+                                  style: TextStyle(
+                                    fontSize: 18, // 크기 조정
+                                    color: Colors.black, // 색상 설정
+                                  ),
+                                ),
+                              )
                             ],
                           );
                         },
@@ -181,7 +238,7 @@ class HomePageApp extends State<HomePage> {
                             children: [ // 그림 아이콘
                               Row(
                               children: [
-                                Icon(Icons.image, size: 50),
+                                Icon(Icons.calendar_month_outlined, size: 40, color: Colors.blue),
                               SizedBox(width: 10),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,12 +251,18 @@ class HomePageApp extends State<HomePage> {
                                 ),
                               ],
                               ),
-                              ElevatedButton(
+                              TextButton(
                                 onPressed: () {
-                                  print("Button ${index + containerCount} clicked");
+                                  print("Button $index clicked");
                                 },
-                                child: Icon(Icons.arrow_forward), // '>' 모양 아이콘
-                              ),
+                                child: Text(
+                                  ">",
+                                  style: TextStyle(
+                                    fontSize: 18, // 크기 조정
+                                    color: Colors.black, // 색상 설정
+                                  ),
+                                ),
+                              )
                             ],
                           );
                         },
@@ -211,7 +274,10 @@ class HomePageApp extends State<HomePage> {
                     // 추가적인 칸
                     Container(
                       height: 50, // 추가 칸의 높이
-                      color: Colors.grey[200], // 배경색을 회색으로 설정
+                      decoration: BoxDecoration(
+                        color: Color(0xFFBEE8F1), // 배경색을 #BEE8F1로 설정
+                        borderRadius: BorderRadius.circular(10), // 둥근 모서리 설정
+                      ), // 배경색을 회색으로 설정
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween, // 양쪽 정렬
                         children: [
@@ -219,7 +285,7 @@ class HomePageApp extends State<HomePage> {
                             padding: EdgeInsets.only(left: 16.0), // 왼쪽 여백
                             child: Text(
                               "카드 지출",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF989898)),
                             ),
                           ),
                           Row(
@@ -227,7 +293,7 @@ class HomePageApp extends State<HomePage> {
                               Padding(
                                 padding: EdgeInsets.only(right: 8.0), // 오른쪽 여백
                                 child: Text(
-                                  "5000원", // 동적 문자열
+                                  '$formattedMonthlyExpense', // 동적 문자열
                                   style: TextStyle(fontSize: 16),
                                 ),
                               ),
@@ -249,16 +315,6 @@ class HomePageApp extends State<HomePage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class SecondPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Second Page")),
-      body: Center(child: Text("This is the second page")),
     );
   }
 }
