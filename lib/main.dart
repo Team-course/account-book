@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'navigation_bar.dart';
+import 'signIn.dart'; // signIn.dart 파일을 임포트합니다.
 
 void main() {
   runApp(const MyApp());
@@ -8,16 +8,14 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
-  //UI 요소 화면 출력 정의
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(      //앱이 기본 구조와 테마 설정
-        title: 'Navigation App',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: NavigationMenu(),
+    return MaterialApp(
+      title: 'Navigation App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: SignInPage(), // SignInPage를 첫 화면으로 설정
     );
   }
 }
