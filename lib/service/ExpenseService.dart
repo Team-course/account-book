@@ -9,7 +9,6 @@ class ExpenseService{
   final String baseUrl = 'http://10.0.2.2:8080/api/finance/account';
 
   Future<double> fetchTotalExpense(int userId, String startDate, String endDate) async{
-
     final uri = Uri.parse('$baseUrl/$userId/spending-summary').replace(
       queryParameters: {
         'startDate':startDate,
