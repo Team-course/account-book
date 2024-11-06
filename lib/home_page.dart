@@ -5,6 +5,7 @@ import 'myAccount_page.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'service/ExpenseService.dart';
+import 'asset_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -28,12 +29,17 @@ class HomePageApp extends State<HomePage> {
   final ExpenseService expenseService = ExpenseService();
 
   // 동적 텍스트
-  String currentMoney = "- 원";
+  String currentMoney = "5,760,000 원";
   double monthlyExpense =0.0;
   double todayExpense = 0.0;
   String financial_schedule= " 교통비 ";
   int containerCount = 3;  // 동적으로 변하는 아이템 수
 
+  List<Map<String,String>>bankAccounts = [
+    {'bank': '다원은행', 'balance': '1,500,000 원'},
+    {'bank': '정인은행', 'balance': '2,200,000 원'},
+    {'bank': '경미은행', 'balance': '2,060,000 원'},
+  ];
   @override
   void initState(){
     super.initState();
@@ -116,13 +122,20 @@ class HomePageApp extends State<HomePage> {
                     // 동적 아이템 생성 부분
                     Expanded(
                       child: ListView.builder(
-                        itemCount: containerCount,  // 아이템 수
+                        itemCount: bankAccounts.length,  // 아이템 수
                         itemBuilder: (context, index) {
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Icon(Icons.image, size: 50),  // 그림 아이콘
-                              Text("아이템 $index"),  // 동적 텍스트
+                              Icon(Icons.account_balance, size: 50),  // 그림 아이콘
+                              Text(
+                                bankAccounts[index]['bank']!,  // 은행 이름
+                                style: TextStyle(fontSize: 16),
+                              ),
+                              Text(
+                                bankAccounts[index]['balance']!,  // 은행 잔액
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
                               TextButton(
                                 onPressed: () {
                                   print("Button $index clicked");
@@ -174,7 +187,7 @@ class HomePageApp extends State<HomePage> {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context)=> MonthlyExpense_page()),
+                            Navigator.push(context, MaterialPageRoute(builder: (context)=> AssetPage()),
                             );
                           },
                           child: Text(

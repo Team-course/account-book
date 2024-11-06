@@ -27,6 +27,18 @@ class _MonthlyExpense_pageState extends State<MonthlyExpense_page> {
     loadMonthlyExpense(userId); // 페이지 초기화 시 총 지출 및 지출 항목 불러오기
   }
 
+  void previousMonth(){
+    setState(() {
+      currentMonth = (currentMonth-1)<1?12:currentMonth-1;
+    });
+  }
+
+  void nextMonth() {
+    setState(() {
+      currentMonth = (currentMonth + 1) > 12 ? 1 : currentMonth + 1;
+    });
+  }
+
   Future<void> loadMonthlyExpense(int userId) async {
     String startDate = DateFormat('yyyy-MM-01').format(DateTime.now()); // 월의 첫째 날
     String endDate = DateFormat('yyyy-MM-dd').format(DateTime.now()); // 오늘 날짜
@@ -38,11 +50,61 @@ class _MonthlyExpense_pageState extends State<MonthlyExpense_page> {
     });
   }
 
+  Widget _buildHeader() {
+    String formattedMonthlyExpense = NumberFormat('#,##0').format(monthlyExpense);
+
+    return Container(
+      // padding: EdgeInsets.all(20),
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              IconButton(
+                onPressed: previousMonth,
+                icon: Icon(Icons.arrow_back_ios, size: 16, color: Colors.black),
+              ),
+              Text(
+                '$currentMonth월',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                onPressed: nextMonth,
+                icon: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
+              ),
+            ],
+          ),
+          SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Text('지출: ', style: TextStyle(fontSize: 14, color: Colors.grey)),
+              Text(
+                '${formattedMonthlyExpense} 원',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          SizedBox(height: 5),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Text('수입: ', style: TextStyle(fontSize: 14, color: Colors.grey)),
+              Text(
+                ' 원',
+                style: TextStyle(fontSize: 18, color: Colors.blue, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    DateTime now = DateTime.now();
-    int month = now.month;
-    String formattedMonthlyExpense = NumberFormat('#,##0').format(monthlyExpense);
 
     Map<String, List<Map<String,dynamic>>> groupedExpenses={};
     for(var expense in categoryExpense){
@@ -54,82 +116,14 @@ class _MonthlyExpense_pageState extends State<MonthlyExpense_page> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(title: Text("")),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 현재 월 표시
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start, // 왼쪽 정렬
-              children: [
-                IconButton(
-                  icon: Icon(Icons.chevron_left, color: Color(0xFF989898)), // 왼쪽 아이콘
-                  onPressed: () {
-                    // 왼쪽 아이콘 클릭 시 동작
-                  },
-                ),
-                SizedBox(width: 0), // 아이콘과 텍스트 사이의 간격을 0으로 설정
-                Text(
-                  '$currentMonth 월',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black),
-                ),
-                SizedBox(width: 0), // 텍스트와 오른쪽 아이콘 사이의 간격을 0으로 설정
-                IconButton(
-                  icon: Icon(Icons.chevron_right, color: Color(0xFF989898)), // 오른쪽 아이콘
-                  onPressed: () {
-                    // 오른쪽 아이콘 클릭 시 동작
-                  },
-                ),
-              ],
-            ),
-            SizedBox(height: 16), // 위쪽 여백
-
-            // 총 지출 표시
-            Column(
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(fontSize: 17), // 기본 텍스트 스타일
-                    children: [
-                      TextSpan(
-                        text: '지출:   ', // "지출: " 텍스트
-                        style: TextStyle(color: Color(0xFF989898)), // 색상 설정
-                      ),
-                      TextSpan(
-                        text: '${formattedMonthlyExpense} 원', // 문자열 앞에 '-' 추가
-                        style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold), // 색상을 검정색으로 설정
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 10), // 위쪽 여백
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(fontSize: 17), // 기본 텍스트 스타일
-                    children: [
-                      TextSpan(
-                        text: '수입:   ', // "수입: " 텍스트
-                        style: TextStyle(color: Color(0xFF989898)), // 색상 설정
-                      ),
-                      TextSpan(
-                        text: '2,451,000 원', // 수입 금액 설정
-                          style: TextStyle(color: Color(0xFF0EACCE), fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 20), // 위쪽 여백
-
-            // 지출 내용 리스트 제목
-            Text(
-              '지출 내역',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF707070)),
-            ),
-            SizedBox(height: 25), // 위쪽 여백
+        padding: const EdgeInsets.all(16),
+         child: Column(
+           crossAxisAlignment: CrossAxisAlignment.start,
+           children: [
+             _buildHeader(),
 
             // 지출 내역을 ListView로 표시
             Expanded(

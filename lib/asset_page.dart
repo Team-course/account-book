@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'service/ExpenseService.dart';
+import 'package:intl/intl.dart';
+
 class AssetPage extends StatefulWidget {
   const AssetPage({super.key});
 
@@ -9,10 +12,17 @@ class AssetPage extends StatefulWidget {
 }
 
 class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
+  final ExpenseService expenseService = ExpenseService();
   late TabController _tabController;
   final CalendarController contentTabController = CalendarController();
   final CalendarController calendarTabController = CalendarController();
   final CalendarController fixedTabController = CalendarController();
+  final CalendarController expenseController = CalendarController();
+
+  double monthlyExpense = 0.0;
+  List<dynamic> categoryExpense = []; // 지출 항목 리스트 추가
+  int userId = 1; // 사용자 ID
+  DateTime selectedDate = DateTime.now();
 
   // Transactions list for "내역" tab
   final List<Map<String, String>> transactions = [
@@ -36,12 +46,119 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    loadMonthlyExpense(userId,selectedDate);
+    expenseController.loadMonthlyData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> loadMonthlyExpense(int userId, DateTime selectedDate) async {
+
+    String startDate = DateFormat('yyyy-MM-01').format(selectedDate); // 월의 첫째 날
+    String endDate = DateFormat('yyyy-MM-dd').format(DateTime.now()); // 오늘 날짜
+
+    var result = await expenseService.fetchMonthlyExpense(userId, startDate, endDate);
+
+    setState(() {
+      monthlyExpense = result['totalExpense'];
+      categoryExpense = result['categoryExpense'];
+    });
+  }
+
+  // 각 날짜별 거래 데이터 (수입, 지출)
+  Map<int, Map<String, dynamic>> dailyTransactions = {};
+
+  // 현재 월에 해당하는 날짜 리스트
+  //RxList days = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> days = <Map<String, dynamic>>[].obs;
+
+  // 월의 날짜 데이터 가져오기
+  Future<void> loadMonthlyData() async {
+    // 현재 월을 저장하는 Rx 변수
+    //RxInt month = DateTime.now().month.obs;
+    RxInt month = calendarTabController.month; // 달력 탭의 선택된 월을 사용
+    int userId = 1;
+
+    // 현재 월에 해당하는 시작일과 종료일 계산
+    DateTime firstDayOfMonth = DateTime(DateTime.now().year, month.value, 1);
+    DateTime lastDayOfMonth = DateTime(DateTime.now().year, month.value + 1, 0);
+
+    String startDate = '${firstDayOfMonth.toIso8601String().split('T')[0]}'; // YYYY-MM-DD 형식
+    String endDate = '${lastDayOfMonth.toIso8601String().split('T')[0]}'; // YYYY-MM-DD 형식
+
+    // 고정된 시작일과 종료일
+    // String startDate = '2024-10-01'; // YYYY-MM-DD 형식
+    // String endDate = '2024-10-31';   // YYYY-MM-DD 형식
+
+    print('Start Date: $startDate'); // 디버깅용 출력
+    print('End Date: $endDate'); // 디버깅용 출력
+
+    try{
+      var monthlyData = await expenseService.fetchMonthlyExpense(userId, startDate, endDate);
+
+      // 날짜별 지출 데이터 초기화
+      Map<int, double> dailyExpenses = {}; // 날짜별 지출을 저장할 맵
+
+      // 카테고리별 지출 데이터 처리
+      if (monthlyData.containsKey('categoryExpense')) {
+        for (var entry in monthlyData['categoryExpense']) {
+          // 날짜를 파싱하고 해당 날짜에 대한 지출을 누적
+          String date = entry['date'];
+          double amount = entry['amount']?.toDouble() ?? 0.0; // null 체크
+
+          int day = DateTime.parse(date).day;
+
+          // 날짜별로 누적 지출 금액 저장
+          dailyExpenses[day] = (dailyExpenses[day] ?? 0) + amount; // 기존 금액에 더하기
+        }
+      }
+
+      // days 리스트 초기화 후 날짜 생성
+      days.clear();
+      dailyTransactions.clear();
+      for (var i = 1; i <= 31; i++) {
+        double expense = dailyExpenses[i] ?? 0.0; // 해당 날짜의 지출이 없으면 0으로 설정
+
+        // dailyTransactions에 데이터 추가
+        dailyTransactions[i] = {
+          'income': 0, // 수입은 기본적으로 0으로 설정
+          'expense': expense, // 각 날짜의 지출
+        };
+
+        // // dailyTransactions 업데이트
+        // dailyTransactions[i] = {
+        //   'income': 0, // 기본적으로 수입은 0
+        //   'expense': expense, // 각 날짜의 지출
+        // };
+
+        dailyTransactions = {
+          23: {'income': 30000, 'expense': 0}, // 23일에 income 30000 추가
+          28: {'income': 63000, 'expense': 0}, // 28일에 income 63000 추가
+        };
+
+        days.add({
+          'day': i,
+          'inMonth': true,
+          'income': dailyTransactions[i]?['income'] ?? 0, // 수입은 기본적으로 0으로 설정
+          'expense': expense, // 각 날짜의 지출
+        });
+      }
+
+      setState(() {});
+
+      // 날짜별 총 지출 출력
+      print("날짜별 총 지출:");
+      dailyTransactions.forEach((day, transaction) {
+        print("날짜: ${day}, 총 지출: ${transaction['expense']}");
+      });
+    }catch(e,stackTrace){
+      print("Error: $e");
+      print("Stack Trace: $stackTrace");
+    }
   }
 
   @override
@@ -83,6 +200,13 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
 
   // 중복되는 상단 정보를 공통으로 출력하는 함수
   Widget _buildHeader(CalendarController controller, String expense, String income) {
+
+    String formattedMonthlyExpense = NumberFormat('#,##0').format(monthlyExpense);
+    DateTime selectedDate = DateTime.now();  // 기본값을 현재 날짜로 설정
+    DateTime previousMonth = DateTime(selectedDate.year, selectedDate.month - 1);
+    DateTime nextMonth = DateTime(selectedDate.year, selectedDate.month + 1);
+
+
     return Container(
       padding: EdgeInsets.all(20),
       color: Colors.white,
@@ -93,8 +217,14 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
             children: [
               IconButton(
                 onPressed: () {
-                  controller.previousMonth();
-                  setState(() {});
+                  setState(() {
+                    controller.previousMonth();
+                    loadMonthlyData();
+                    // loadMonthlyExpense(userId,previousMonth);
+                  });
+                  // controller.previousMonth();
+                  // loadMonthlyData();
+                  // loadMonthlyExpense(userId,previousMonth);
                 },
                 icon: Icon(Icons.arrow_back_ios, size: 10, color: Colors.black),
               ),
@@ -104,8 +234,14 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
               ),
               IconButton(
                 onPressed: () {
-                  controller.nextMonth();
-                  setState(() {});
+                  setState(() {
+                    controller.nextMonth();
+                    loadMonthlyData();
+                    loadMonthlyExpense(userId,nextMonth);
+                  });
+                  // controller.nextMonth();
+                  // loadMonthlyData();
+                  // loadMonthlyExpense(userId,nextMonth);
                 },
                 icon: Icon(Icons.arrow_forward_ios, size: 10, color: Colors.black),
               ),
@@ -114,7 +250,7 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
           Row(
             children: [
               Text('지출: ', style: TextStyle(fontSize: 14, color: Colors.grey)),
-              Text(expense, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('${formattedMonthlyExpense} 원', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ],
           ),
           Row(
@@ -131,37 +267,85 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
 
   // 내역 탭
   Widget _buildContentTab(BuildContext context) {
+
+    Map<String, List<Map<String,dynamic>>> groupedExpenses={};
+
+    for(var expense in categoryExpense){
+      String date = expense['date'];
+      if(!groupedExpenses.containsKey(date)){
+        groupedExpenses[date] = [];
+      }
+      groupedExpenses[date]!.add(expense);
+    }
+
+    String formattedMonthlyExpense = NumberFormat('#,##0').format(monthlyExpense);
+
     return Column(
       children: [
-        _buildHeader(contentTabController, '1,230,500원', '2,310,200원'),
+        _buildHeader(contentTabController, '$formattedMonthlyExpense 원', '2,310,200원'),
         Expanded(
-          child: ListView.builder(
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              final currentTransaction = transactions[index];
-              final previousTransaction = index > 0 ? transactions[index - 1] : null;
-
-              final showDate = previousTransaction == null || currentTransaction['date'] != previousTransaction['date'];
+          child: ListView(
+            children: groupedExpenses.entries.map((entry) {
+              String date = entry.key;
+              List<Map<String, dynamic>> expensesForDate = entry.value;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (showDate)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: Text(
-                        currentTransaction['date']!,
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: Text(
+                      '${DateTime.parse(date).day}일', // 날짜에서 '일' 부분만 추출
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
                     ),
-                  _buildTransactionItem(
-                    context,
-                    currentTransaction['title']!,
-                    currentTransaction['amount']!,
+                  ),
+                  ...expensesForDate.map((expense) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start, // 텍스트를 왼쪽 정렬
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween, // 양쪽 끝으로 배치
+                          children: [
+                            Row(
+                              children: [
+                                SizedBox(width: 20),
+                                Icon(Icons.category, color: Colors.grey), // 왼쪽에 아이콘 추가
+                                SizedBox(width: 25), // 아이콘과 카테고리 사이 간격
+                                Text(
+                                  expense['category'],
+                                  style: TextStyle(fontSize: 20, color: Colors.black,fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              '-${expense['amount']} 원',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold,color: Colors.red),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 4), // 카테고리와 '이체/입출금통장' 사이 간격
+                        Row(
+                          children: [
+                            SizedBox(width: 70), // 아이콘과 카테고리 간격 만큼 띄우기
+                            Text(
+                              '이체/입출금통장', // 추가할 텍스트
+                              style: TextStyle(fontSize: 14, color: Colors.grey), // 작은 글씨와 회색
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  )),
+                  Divider(
+                    color: Color(0xFF989898),
+                    thickness: 0.5,
+                    indent: 16.0,
+                    endIndent: 16.0,
                   ),
                 ],
               );
-            },
+            }).toList(),
           ),
         ),
       ],
@@ -170,9 +354,11 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
 
   // 달력 탭
   Widget _buildCalendarTab(BuildContext context) {
+    String formattedMonthlyExpense = NumberFormat('#,##0').format(monthlyExpense);
+
     return Column(
       children: [
-        _buildHeader(calendarTabController, '1,230,500원', '2,310,200원'),
+        _buildHeader(calendarTabController, '$formattedMonthlyExpense 원', '2,310,200원'),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -214,9 +400,11 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
 
   // 고정 탭 (도넛 차트와 확장 가능한 리스트)
   Widget _buildFixedExpenseTab(BuildContext context) {
+    String formattedMonthlyExpense = NumberFormat('#,##0').format(monthlyExpense);
+
     return Column(
       children: [
-        _buildHeader(fixedTabController, '1,230,500원', '2,310,200원'),
+        _buildHeader(fixedTabController, '$formattedMonthlyExpense 원', '2,310,200원'),
         Expanded(
           child: Column(
             children: [
@@ -376,9 +564,9 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
                             '    ',
                             style: TextStyle(fontSize: 8, color: Colors.white), // 수입 표시
                           ),
-                        if (expense != 0)
+                        if (expense.isNotEmpty)
                           Text(
-                            '- ${dayData["expense"]}원',
+                            '- ${dayData["expense"]}',
                             style: TextStyle(fontSize: 8, color: Colors.red), // 지출 표시
                           )
                         else
@@ -410,6 +598,8 @@ class _AssetPageState extends State<AssetPage> with TickerProviderStateMixin {
 
 // CalendarController 정의
 class CalendarController extends GetxController {
+  final ExpenseService expenseService = ExpenseService();
+
   // 현재 월을 저장하는 Rx 변수
   RxInt month = DateTime.now().month.obs;
 
@@ -417,14 +607,112 @@ class CalendarController extends GetxController {
   List<String> week = ['일', '월', '화', '수', '목', '금', '토'];
 
   // 현재 월에 해당하는 날짜 리스트
-  RxList days = <Map<String, dynamic>>[].obs;
+  //RxList days = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> days = <Map<String, dynamic>>[].obs;
+
+  // 각 날짜별 거래 데이터 (수입, 지출)
+  //Map<int, Map<String, dynamic>> dailyTransactions = {};
+  // 각 날짜별 거래 데이터 (수입, 지출)
+  Map<int, Map<String, dynamic>> dailyTransactions = {
+    23: {'income': 30000, 'expense': 0}, // 23일에 income 30000 추가
+    28: {'income': 63000, 'expense': 0}, // 28일에 income 63000 추가
+  };
+
+
+  // 월의 날짜 데이터 가져오기
+  Future<void> loadMonthlyData() async {
+    int userId = 1;
+
+    // 현재 월에 해당하는 시작일과 종료일 계산
+    // DateTime firstDayOfMonth = DateTime(DateTime.now().year, month.value, 1);
+    // DateTime lastDayOfMonth = DateTime(DateTime.now().year, month.value + 1, 0);
+    //
+    // String startDate = '${firstDayOfMonth.toIso8601String().split('T')[0]}'; // YYYY-MM-DD 형식
+    // String endDate = '${lastDayOfMonth.toIso8601String().split('T')[0]}'; // YYYY-MM-DD 형식
+
+    // 고정된 시작일과 종료일
+    // String startDate = '2024-10-01'; // YYYY-MM-DD 형식
+    // String endDate = '2024-10-31';   // YYYY-MM-DD 형식
+
+    DateTime firstDayOfMonth = DateTime(DateTime.now().year, month.value, 1);
+    DateTime lastDayOfMonth = DateTime(DateTime.now().year, month.value + 1, 0);
+
+    String startDate = '${firstDayOfMonth.toIso8601String().split('T')[0]}'; // YYYY-MM-DD 형식
+    String endDate = '${lastDayOfMonth.toIso8601String().split('T')[0]}'; // YYYY-MM-DD 형식
+
+
+    print('Start Date: $startDate'); // 디버깅용 출력
+    print('End Date: $endDate'); // 디버깅용 출력
+
+    try{
+      var monthlyData = await expenseService.fetchMonthlyExpense(userId, startDate, endDate);
+
+    // 날짜별 지출 데이터 초기화
+    Map<int, double> dailyExpenses = {}; // 날짜별 지출을 저장할 맵
+
+    // 카테고리별 지출 데이터 처리
+    if (monthlyData.containsKey('categoryExpense')) {
+      for (var entry in monthlyData['categoryExpense']) {
+        // 날짜를 파싱하고 해당 날짜에 대한 지출을 누적
+        String date = entry['date'];
+        double amount = entry['amount']?.toDouble() ?? 0.0; // null 체크
+
+        int day = DateTime.parse(date).day;
+        // 날짜별로 누적 지출 금액 저장
+        dailyExpenses[day] = (dailyExpenses[day] ?? 0) + amount; // 기존 금액에 더하기
+      }
+      }
+
+    // days 리스트 초기화 후 날짜 생성
+    days.clear();
+    for (var i = 1; i <= 31; i++) {
+
+      double expense = dailyExpenses[i] ?? 0; // 해당 날짜의 지출이 없으면 0으로 설정
+
+      String expenseDisplay = expense > 0 ? "${expense}원" : "";
+
+      // 만약 dailyTransactions[i]에 이미 값이 있으면 income 값을 유지하고 expense만 업데이트
+      if (dailyTransactions.containsKey(i)) {
+        dailyTransactions[i]!['expense'] = expense;
+      } else {
+        // 새로운 날짜에 대해 초기화
+        dailyTransactions[i] = {
+          'income': 0, // 기본적으로 수입은 0으로 설정
+          'expense': expense, // 각 날짜의 지출
+        };
+      }
+      //dailyTransactions에 데이터 추가
+      // dailyTransactions[i] = {
+      //   'income': 0, // 수입은 기본적으로 0으로 설정
+      //   'expense': expense, // 각 날짜의 지출
+      // };
+
+      days.add({
+        'day': i,
+        'inMonth': true,
+        'income': dailyTransactions[i]?['income'] ?? 0, // 수입은 기본적으로 0으로 설정
+        'expense': expenseDisplay
+        //dailyExpenses[i]??0.0, // 각 날짜의 지출
+      });
+    }
+
+    // 날짜별 총 지출 출력
+    print("날짜별 총 지출:");
+    dailyTransactions.forEach((day, transaction) {
+      print("날짜: ${day}, 총 지출: ${transaction['expense']}");
+    });
+  }catch(e,stackTrace){
+      print("Error: $e");
+      print("Stack Trace: $stackTrace");
+      }
+    }
 
   // Sample transaction data mapped by day
-  Map<int, Map<String, dynamic>> dailyTransactions = {
-    23: {'income': 51000, 'expense': 56000},
-    24: {'income': 0, 'expense': 46000},
-    // Add other days with income and expense data as needed
-  };
+  // Map<int, Map<String, dynamic>> dailyTransactions = {
+  //   23: {'income': 51000, 'expense': 56000},
+  //   24: {'income': 0, 'expense': 46000},
+  //   // Add other days with income and expense data as needed
+  // };
 
   @override
   void onInit() {
@@ -439,12 +727,14 @@ class CalendarController extends GetxController {
   void previousMonth() {
     month.value = (month.value == 1) ? 12 : month.value - 1;
     _generateDays(month.value);
-  }
+    loadMonthlyData();
+}
 
   // 다음 달로 이동하는 함수
   void nextMonth() {
     month.value = (month.value == 12) ? 1 : month.value + 1;
     _generateDays(month.value);
+    loadMonthlyData();
   }
 
   // 날짜 데이터를 생성하는 함수
@@ -461,7 +751,7 @@ class CalendarController extends GetxController {
         "day": '',
         "inMonth": false,
         "income": 0,
-        "expense": 0,
+        "expense": "",
       });
     }
 
@@ -475,7 +765,7 @@ class CalendarController extends GetxController {
         "day": i,
         "inMonth": true,
         "income": transaction["income"],
-        "expense": transaction["expense"],
+        "expense": transaction["expense"]>0?"${transaction["expense"]}":"",
       });
     }
 
@@ -487,7 +777,7 @@ class CalendarController extends GetxController {
           "day": '',
           "inMonth": false,
           "income": 0,
-          "expense": 0,
+          "expense": "",
         });
       }
     }

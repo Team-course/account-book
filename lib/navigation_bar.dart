@@ -23,7 +23,7 @@ class NavigationMenu extends StatelessWidget{
               destinations: const [
                 NavigationDestination(icon: Icon(Icons.home), label: "Home"),
                 NavigationDestination(icon: Icon(Icons.account_balance_wallet), label: "Asset"),
-                NavigationDestination(icon: Icon(Icons.calendar_today), label: "calendar"),
+                //NavigationDestination(icon: Icon(Icons.calendar_today), label: "calendar"),
                 NavigationDestination(icon: Icon(Icons.person), label: "My Page"),
               ]
           )
@@ -38,7 +38,7 @@ class NavigationController extends GetxController {
   final screens = [
     HomePage(),
     AssetPage(),
-    CalendarPage(),
+    //CalendarPage(),
     MyPage()
   ];
 }
